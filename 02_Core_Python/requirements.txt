@@ -1,0 +1,11 @@
+# Minimal dependencies for CI test suite (02_Core_Python/tests/).
+# Heavy domain deps (torch, metatrader5, xgboost) are gated behind
+# pytest.importorskip in each test module -- tests skip gracefully
+# if those are absent. Only the deps needed by conftest.py and the
+# importorskip'd modules are listed here.
+
+pytest>=7.0
+loguru>=0.7
+bottle>=0.12
+requests>=2.28
+numpy>=1.24
