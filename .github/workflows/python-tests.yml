@@ -13,8 +13,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        working-directory: 02_Core_Python
-        run: pip install -r requirements.txt
+        run: pip install -r 02_Core_Python/requirements.txt
       - name: Run pytest
         working-directory: 02_Core_Python
         run: pytest tests -q --tb=short
