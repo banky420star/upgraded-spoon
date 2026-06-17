@@ -1,0 +1,20 @@
+trading:
+  symbol: "XAUUSDm"
+  timeframe: "M15"
+  base_lot: 0.1
+  spread_max: 50
+
+risk:
+  live_approved: false
+  max_drawdown: 0.15
+  daily_loss_limit: 500
+
+sessions:
+  start: "01:00"
+  end: "23:00"
+
+drl:
+  feature_version: "ULTIMATE_150"
+  reward_weights:
+    pnl: 1.0
+    drawdown_penalty: 0.5
