@@ -188,3 +188,36 @@ def _loguru_caplog_bridge():
         _loguru_logger.remove(handler_id)
     except ValueError:
         pass
+
+
+# --- ADDED for test_api_server_health.py HERMETIC tests ---
+# Fixture-only: does NOT gate the whole test directory. The hard gate
+# is at module-scope in test_api_server_health.py; sibling cooldown +
+# logging tests are unaffected.
+
+
+@pytest.fixture
+def live_state_factory(monkeypatch, tmp_path):
+    """Write a controlled ``live_state.json`` to ``tmp_path/`` and
+    monkeypatch ``Python.api_server.ROOT`` to point at it.
+
+    Returns a factory: ``live_state_factory(content) -> Path`` where
+    ``content`` is either a dict (auto-JSON-serialized) or a raw
+    ``str`` (e.g. malformed JSON for fail-soft tests).
+    """
+    import json as _json
+    import sys as _sys
+
+    def _factory(content):
+        if isinstance(content, dict):
+            text_out = _json.dumps(content)
+        else:
+            text_out = content
+        fp = tmp_path / "live_state.json"
+        fp.write_text(text_out, encoding="utf-8")
+        target = _sys.modules.get("Python.api_server")
+        if target is not None:
+            monkeypatch.setattr(target, "ROOT", str(tmp_path))
+        return fp
+
+    return _factory

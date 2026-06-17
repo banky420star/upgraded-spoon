@@ -225,3 +225,19 @@ The two key reliability contracts are locked end-to-end:
 - `test_training_analyzer_logging.py`   -- the no-spam logging contract: a Muting WARNING fires exactly once on the first failure, no further warnings fire during the cooldown, an INFO `Ollama recovered` fires on the first post-cooldown success, and the json-decode ValueError path emits its own dedicated 15 s-cooldown WARNING.
 
 Run them with: `cd 02_Core_Python && pytest tests -q`.
+
+### Contract tests
+
+The `02_Core_Python/tests/` directory contains contract tests that lock system-level wiring against regressions:
+
+- **`test_api_server_health.py`** — Locks the `api_server` `/api/health` endpoint contract.
+  Verifies that `Server_AGI` writes the expected `live_state.json` schema
+  (`api_server.py:_read_live_state:385` reads `ROOT` at call time, no module-level
+  cache); that the `/api/health` response exposes `server_running` and
+  `brain_initialized` as booleans; and that `training.cycles_completed > 0` coerces
+  the state to `healthy` / `degraded`. A malformed-JSON test confirms the reader
+  fails soft instead of propagating `JSONDecodeError` to callers.
+
+These run on every push to `main` via `.github/workflows/python-tests.yml`
+(matrix `3.12`/`3.13`); adding a new test file under `02_Core_Python/tests/` is
+picked up automatically.
