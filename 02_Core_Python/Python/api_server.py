@@ -2482,7 +2482,7 @@ def api_control():
             try:
                 result = subprocess.run(
                     ["powershell", "-NoProfile", "-Command",
-                     "Get-Process python* -ErrorAction SilentlyContinue | "
+                     "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" -ErrorAction SilentlyContinue | "
                      "Where-Object { $_.CommandLine -match 'Server_AGI' } | "
                      "Select-Object -ExpandProperty Id"],
                     capture_output=True, text=True, timeout=10,
@@ -2565,7 +2565,7 @@ def api_control():
             try:
                 result = subprocess.run(
                     ["powershell", "-NoProfile", "-Command",
-                     "Get-Process python* -ErrorAction SilentlyContinue | "
+                     "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" -ErrorAction SilentlyContinue | "
                      "Where-Object { $_.CommandLine -match 'Server_AGI' } | "
                      "Select-Object -ExpandProperty Id"],
                     capture_output=True, text=True, timeout=10,
@@ -2744,7 +2744,7 @@ def api_health():
                 # Windows: use PowerShell (consistent with other detection in this file)
                 result = subprocess.run(
                     ["powershell", "-NoProfile", "-Command",
-                     "Get-Process python* -ErrorAction SilentlyContinue | "
+                     "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" -ErrorAction SilentlyContinue | "
                      "Where-Object { $_.CommandLine -match 'Server_AGI' } | "
                      "Select-Object -First 1 -ExpandProperty Id"],
                     capture_output=True, text=True, timeout=8
@@ -2798,7 +2798,7 @@ def api_health():
                 if platform.system().lower().startswith("win"):
                     result = subprocess.run(
                         ["powershell", "-NoProfile", "-Command",
-                         "Get-Process python* -ErrorAction SilentlyContinue | "
+                         "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" -ErrorAction SilentlyContinue | "
                          "Where-Object { $_.CommandLine -match 'Server_AGI' } | "
                          "Select-Object -First 1 -ExpandProperty Id"],
                         capture_output=True, text=True, timeout=8
