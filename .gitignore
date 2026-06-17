@@ -1,0 +1,16 @@
+!.env.example
+*.bak
+*.egg-info/
+*.log
+*.py[cod]
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+.next/
+.venv/
+Thumbs.db
+__pycache__/
+build/
+dist/
+node_modules/
