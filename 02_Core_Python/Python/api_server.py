@@ -2782,7 +2782,13 @@ def api_health():
             if os.path.exists(live_state_path):
                 with open(live_state_path, "r", encoding="utf-8") as f:
                     live = json.load(f)
-                checks["brain_initialized"] = bool(live.get("server", {}).get("running"))
+                # Wire fix: writer emits [timestamp, registry, symbols,
+                # trading, training] -- no top-level server.running key.
+                # Derive brain_initialized from cycles_completed instead.
+                _live_training = live.get("training", {})
+                _live_cycles = _live_training.get("cycles_completed", 0) if isinstance(_live_training, dict) else 0
+                # brain initialized if ANY cycle completed OR models loaded (registry non-empty)
+                checks["brain_initialized"] = _live_cycles > 0 or bool(live.get("registry"))
         except Exception:
             pass
         if not checks["brain_initialized"]:
@@ -2814,6 +2820,24 @@ def api_health():
     # Check config
     cfg = _read_config()
     checks["config_loaded"] = bool(cfg)
+
+    # BUFFY_HEARTBEAT_PATCH_v1 begin
+    # Heartbeat-based liveness: if live_state.json was updated <60s ago,
+    # Server_AGI is alive regardless of process-detection result.
+    # Also derive brain_initialized from training.cycles_completed.
+    _agi_live_path = os.path.join(ROOT, "live_state.json")
+    if os.path.exists(_agi_live_path):
+        try:
+            _agi_age = time.time() - os.path.getmtime(_agi_live_path)
+            if _agi_age < 60:
+                checks["server_running"] = True
+            _agi_live = _read_live_state() or {}
+            _agi_cycles = (_agi_live.get("training") or {}).get("cycles_completed", 0)
+            if _agi_cycles > 0:
+                checks["brain_initialized"] = True
+        except Exception:
+            pass
+    # BUFFY_HEARTBEAT_PATCH_v1 end
 
     # Overall status
     critical_checks = [checks["server_running"], checks["risk_engine"]]

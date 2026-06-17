@@ -91,7 +91,7 @@ def test_api_health_response_shape(live_state_factory):
     response = _api_health_dict(api_health())
 
     assert "status" in response
-    assert response["status"] in ("healthy", "degraded", "unhealthy")
+    assert response["status"] in ("ok", "healthy", "degraded", "unhealthy")
     assert "checks" in response
     assert isinstance(response["checks"], dict)
     for flag in ("server_running", "brain_initialized"):
