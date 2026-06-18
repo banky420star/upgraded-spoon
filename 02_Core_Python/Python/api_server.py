@@ -2821,23 +2821,39 @@ def api_health():
     cfg = _read_config()
     checks["config_loaded"] = bool(cfg)
 
-    # BUFFY_HEARTBEAT_PATCH_v1 begin
+    # BUFFY_HEARTBEAT_PATCH_v2 begin
     # Heartbeat-based liveness: if live_state.json was updated <60s ago,
-    # Server_AGI is alive regardless of process-detection result.
-    # Also derive brain_initialized from training.cycles_completed.
-    _agi_live_path = os.path.join(ROOT, "live_state.json")
-    if os.path.exists(_agi_live_path):
-        try:
+    # Server_AGI is alive regardless of process-detection result and its
+    # internal components (risk engine, brain) are reachable via the live
+    # trading state it just dumped. Reuse _read_live_state() instead of
+    # re-opening the file so the same mtime + parse path is exercised.
+    # Tight conditions: risk_engine only when canTrade is explicitly True
+    # (a halted engine still reports the haltReason key, so we must NOT
+    # use that as a positive signal -- CWE-1188 false-positive health).
+    try:
+        _agi_live_path = os.path.join(ROOT, "live_state.json")
+        _agi_fresh = False
+        if os.path.exists(_agi_live_path):
             _agi_age = time.time() - os.path.getmtime(_agi_live_path)
-            if _agi_age < 60:
-                checks["server_running"] = True
-            _agi_live = _read_live_state() or {}
+            _agi_fresh = _agi_age < 60
+        _agi_live = _read_live_state() if _agi_fresh else {}
+        if _agi_fresh:
+            checks["server_running"] = True
+            _agi_trading = _agi_live.get("trading") or {}
+            _agi_risk = _agi_trading.get("risk") or {}
             _agi_cycles = (_agi_live.get("training") or {}).get("cycles_completed", 0)
-            if _agi_cycles > 0:
+            if _agi_cycles > 0 or bool(_agi_live.get("registry")) or bool(_agi_trading):
                 checks["brain_initialized"] = True
-        except Exception:
-            pass
-    # BUFFY_HEARTBEAT_PATCH_v1 end
+            if isinstance(_agi_risk, dict) and _agi_risk.get("canTrade") is True:
+                checks["risk_engine"] = True
+            if bool(_agi_live.get("symbols")):
+                checks["config_loaded"] = True
+    except (json.JSONDecodeError, OSError, ValueError):
+        # Live state unreadable / malformed -- leave checks at defaults so
+        # the rest of the function (process detection, model registry, ...)
+        # can still report an honest degraded status instead of a false ok.
+        pass
+    # BUFFY_HEARTBEAT_PATCH_v2 end
 
     # Overall status
     critical_checks = [checks["server_running"], checks["risk_engine"]]
